@@ -130,3 +130,9 @@ dmypy.json
 
 # Pycharm
 .idea/
+
+# Checkpoints folder
+alexnet_chkpt/
+
+# Checkpoint file
+*.pth
