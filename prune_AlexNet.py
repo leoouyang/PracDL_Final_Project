@@ -8,37 +8,38 @@ import torch.nn.functional as F
 
 import argparse
 
-
 parser = argparse.ArgumentParser(
     description='PyTorch AlexNet Prune & Retraining')
-parser.add_argument('--extractor', action='store_true', default=True,
-                    help='Prune feature extractor of AlexNet')
-parser.add_argument('--classifier', action='store_true', default=True,
-                    help='Prune feature extractor of AlexNet')
-parser.add_argument('--prune_fraction', type=float, default=0.2,
+parser.add_argument('--ignore_extractor', action='store_true',
+                    help='Don\'t prune feature extractor of AlexNet')
+parser.add_argument('--ignore_classifier', action='store_true',
+                    help='Don\'t prune feature extractor of AlexNet')
+parser.add_argument('--prune_fraction', type=float, default=0.5,
                     help='Fraction of parameters to prune each iteration')
-parser.add_argument('--iterations', type=int, default=3,
+parser.add_argument('--iterations', type=int, default=6,
                     help='Number of iterations for iterative pruning')
+parser.add_argument('--random_prune', action='store_true',
+                    help='Randomly select connections to prune')
 
 
 def finetune(model, num_epochs, trainloader, testloader, device):
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
     test_accus = train(model, device, trainloader, testloader, criterion,
-                       optimizer, num_epochs, None, scheduler=scheduler)
+                       optimizer, num_epochs, None, scheduler=None)
     train_accu = evaluate(model, trainloader, device)
     print("Finetune test accus:", test_accus)
     return test_accus[-1], train_accu
 
 
-def print_mask_sum(root_module):
+def print_mask_sum(root_module_list):
     mask_sum = 0
-    for name,module in root_module.named_children():
-        # print(name)
-        for name, mask in module.named_buffers():
-            # print(name, mask.sum().item())
-            mask_sum += mask.sum().item()
+    for root_module in root_module_list:
+        for name,module in root_module.named_children():
+            # print(name)
+            for name, mask in module.named_buffers():
+                # print(name, mask.sum().item())
+                mask_sum += mask.sum().item()
     print("Mask sum:", mask_sum)
 
 
@@ -61,14 +62,24 @@ def get_parameters_to_prune(root_module, attrs2prune):
     return parameters_to_prune
 
 if __name__ == "__main__":
-    batch_size = 128
-    MODEL_PATH = './alexnet_original.pth'
+    MODEL_PATH = './alexnet_finetuned.pth'
     CHKPT_DIR = "alexnet_chkpt"
-
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    args = parser.parse_args()
+    print(args)
+
+    batch_size = 128
+    prune_iteration = args.iterations
+    prune_fraction = args.prune_fraction
 
     np.random.seed(0)
     torch.manual_seed(0)
+
+    if args.random_prune:
+        pruning_method = prune.RandomUnstructured
+    else:
+        pruning_method = prune.L1Unstructured
 
     trainset, testset = load_cifar10_pytorch(root='G:\ML dataset', transform=ImageNet_Transform_Func)
     # trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
@@ -86,26 +97,45 @@ if __name__ == "__main__":
     # print(evaluate(model,testloader, DEVICE)) #0.838
     # print(evaluate(model,trainloader, DEVICE)) #0.88386
 
-
-    test_accu, train_accu = finetune(model, 20, trainloader, testloader, DEVICE)
+    # test_accu, train_accu = finetune(model, 15, trainloader, testloader, DEVICE)
+    test_accu, train_accu = evaluate(model,testloader, DEVICE), evaluate(model,trainloader, DEVICE)
     print(test_accu, train_accu)
 
-    parameters_to_prune = get_parameters_to_prune(model.features, ("weight", "bias"))
-    parameters_to_prune += get_parameters_to_prune(model.classifier, ("weight", "bias"))
-    for i in range(5):
+    frac_list = [100]
+    test_accus_prune= [test_accu]
+    train_accus_prune= [train_accu]
+    test_accus_prune_finetuned = [test_accu]
+    train_accus_prune_finetuned = [train_accu]
+    if not args.ignore_extractor:
+        parameters_to_prune = get_parameters_to_prune(model.features, ("weight", "bias"))
+    if not args.ignore_classifier:
+        parameters_to_prune += get_parameters_to_prune(model.classifier, ("weight", "bias"))
+    print(pruning_method)
+    for i in range(prune_iteration):
         print("=========================Iteration %i =========================="%(i+1))
         prune.global_unstructured(
             parameters_to_prune,
-            pruning_method=prune.L1Unstructured,
-            amount=0.5,
+            pruning_method=pruning_method,
+            amount=prune_fraction,
         )
+        frac_list.append(frac_list[-1]*(1-prune_fraction))
 
-        print_mask_sum(model.features)
+        print_mask_sum([model.features, model.classifier])
+        test_accu, train_accu = evaluate(model, testloader, DEVICE), evaluate(
+            model, trainloader, DEVICE)
         print("Performance before finetuning:")
-        print("Test accuracy:", evaluate(model,testloader, DEVICE)) #0.7668
-        print("Training accuracy:", evaluate(model, trainloader, DEVICE)) #0.80664
-
-        print("Performance after finetuning:")
-        test_accu, train_accu = finetune(model, 10, trainloader, testloader, DEVICE)
         print("Test accuracy:", test_accu)
         print("Training accuracy:", train_accu)
+        test_accus_prune.append(test_accu)
+        train_accus_prune.append(train_accu)
+
+        test_accu, train_accu = finetune(model, 5, trainloader, testloader, DEVICE)
+        print("Performance after finetuning:")
+        print("Test accuracy:", test_accu)
+        print("Training accuracy:", train_accu)
+        test_accus_prune_finetuned.append(test_accu)
+        train_accus_prune_finetuned.append(train_accu)
+
+    result = np.vstack((frac_list, test_accus_prune, train_accus_prune, test_accus_prune_finetuned, train_accus_prune_finetuned))
+    np.savetxt("Alexnet_unstructured_performance.npy", result)
+

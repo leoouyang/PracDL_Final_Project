@@ -103,11 +103,9 @@ def evaluate(model, test_loader, device):
         return test_accu
 
 
-def set_parameter_requires_grad(model, feature_extracting):
-    if feature_extracting:
-        for param in model.parameters():
-            param.requires_grad = False
-
+def set_parameter_requires_grad(model, requires_grad):
+    for param in model.parameters():
+        param.requires_grad = requires_grad
 
 ImageNet_Transform_Func = transforms.Compose([
     transforms.Resize(256),
@@ -119,13 +117,13 @@ ImageNet_Transform_Func = transforms.Compose([
 
 if __name__ == "__main__":
     batch_size = 128
-    max_epoch = 1
+    max_epoch = 20
     chkpt_dir = "alexnet_chkpt"
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # trainset, testset = load_cifar10_pytorch(root='G:\ML dataset', transform=transform)
-    trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
+    trainset, testset = load_cifar10_pytorch(root='G:\ML dataset', transform=ImageNet_Transform_Func)
+    # trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=2)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
@@ -135,7 +133,7 @@ if __name__ == "__main__":
                'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     model = models.alexnet(pretrained=True)
-    set_parameter_requires_grad(model, True)
+    set_parameter_requires_grad(model, False)
     model.classifier[6] = nn.Linear(4096, 10)
     model.to(DEVICE)
     criterion = torch.nn.CrossEntropyLoss()
@@ -143,13 +141,11 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
     test_accus = train(model, DEVICE, trainloader, testloader, criterion,
                        optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
-
     print(test_accus)
 
-    # PATH = './alexnet_cifar10.pth'
-    # model = models.alexnet()
-    # model.classifier[6] = nn.Linear(4096, 10)
-    # model.to(DEVICE)
-    # model.load_state_dict(torch.load(PATH))
-    # print(evaluate(model,testloader, DEVICE))
-    # print(evaluate(model,trainloader, DEVICE))
+    # load_chkpt(model, "./alexnet_chkpt/checkpoint_13_0.91.pth", DEVICE)
+    # set_parameter_requires_grad(model, True)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
+    # test_accus = train(model, DEVICE, trainloader, testloader, criterion,
+    #                    optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
