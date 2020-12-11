@@ -132,7 +132,7 @@ dmypy.json
 .idea/
 
 # Checkpoints folder
-alexnet_chkpt/
+*chkpt/
 
 # Checkpoint file
 *.pth

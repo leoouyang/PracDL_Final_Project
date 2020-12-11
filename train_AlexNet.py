@@ -10,13 +10,6 @@ import torchvision.transforms as transforms
 
 
 def save_chkpt(model, epoch, val_acc, chkpt_dir):
-    """
-        Save the trained model.
-        :param model (torch.nn.module object): miniUNet object in this homework, trained model.
-        :param epoch (int): current epoch number.
-        :param test_miou (float): miou of the test set.
-        :return: None
-    """
     if not os.path.exists(chkpt_dir):
         os.makedirs(chkpt_dir)
 
@@ -28,14 +21,6 @@ def save_chkpt(model, epoch, val_acc, chkpt_dir):
 
 
 def load_chkpt(model, chkpt_path, device):
-    """
-        Load model parameters from saved checkpoint.
-        :param model (torch.nn.module object): miniUNet model to accept the saved parameters.
-        :param chkpt_path (str): path of the checkpoint to be loaded.
-        :return model (torch.nn.module object): miniUNet model with its parameters loaded from the checkpoint.
-        :return epoch (int): epoch at which the checkpoint is saved.
-        :return model_miou (float): miou of the test set at the checkpoint.
-    """
     checkpoint = torch.load(chkpt_path, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     epoch = checkpoint['epoch']

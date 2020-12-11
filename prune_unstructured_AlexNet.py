@@ -94,10 +94,6 @@ if __name__ == "__main__":
     print(model)
     load_chkpt(model, MODEL_PATH, DEVICE)
 
-    # print(evaluate(model,testloader, DEVICE)) #0.838
-    # print(evaluate(model,trainloader, DEVICE)) #0.88386
-
-    # test_accu, train_accu = finetune(model, 15, trainloader, testloader, DEVICE)
     test_accu, train_accu = evaluate(model,testloader, DEVICE), evaluate(model,trainloader, DEVICE)
     print(test_accu, train_accu)
 
@@ -106,8 +102,9 @@ if __name__ == "__main__":
     train_accus_prune= [train_accu]
     test_accus_prune_finetuned = [test_accu]
     train_accus_prune_finetuned = [train_accu]
+    parameters_to_prune = []
     if not args.ignore_extractor:
-        parameters_to_prune = get_parameters_to_prune(model.features, ("weight", "bias"))
+        parameters_to_prune += get_parameters_to_prune(model.features, ("weight", "bias"))
     if not args.ignore_classifier:
         parameters_to_prune += get_parameters_to_prune(model.classifier, ("weight", "bias"))
     print(pruning_method)
@@ -136,6 +133,18 @@ if __name__ == "__main__":
         test_accus_prune_finetuned.append(test_accu)
         train_accus_prune_finetuned.append(train_accu)
 
+        sum_zero_weight = 0
+        sum_weight = 0
+        for module, parameter in parameters_to_prune:
+            cur_zero_weight = float(torch.sum(getattr(module,parameter) == 0))
+            cur_weight = float(getattr(module,parameter).nelement())
+            print("Sparsity in {}.{}: {:.2f}%".format(module, parameter,
+                100. * cur_zero_weight/cur_weight))
+            sum_zero_weight+=cur_zero_weight
+            sum_weight += cur_weight
+        print("Global sparsity: {:.2f}%".format(100. * sum_zero_weight/sum_weight))
+        print(sum_zero_weight, sum_weight)
+
     result = np.vstack((frac_list, test_accus_prune, train_accus_prune, test_accus_prune_finetuned, train_accus_prune_finetuned))
-    np.savetxt("Alexnet_unstructured_performance.npy", result)
+    np.savetxt("Alexnet_unstructured_performance.txt", result)
 
