@@ -76,7 +76,6 @@ def train(model, device, train_loader, test_loader, criterion,
 def evaluate(model, test_loader, device):
     model.eval()
     with torch.no_grad():
-        # TODO
         num_correct = 0
         for i, data in enumerate(test_loader):
             xs, ys = data

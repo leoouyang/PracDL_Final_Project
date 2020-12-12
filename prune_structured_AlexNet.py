@@ -9,21 +9,15 @@ import argparse
 
 parser = argparse.ArgumentParser(
     description='PyTorch AlexNet Prune & Retraining')
-parser.add_argument('--ignore_extractor', action='store_true',
-                    help='Don\'t prune feature extractor of AlexNet')
-parser.add_argument('--ignore_classifier', action='store_true',
-                    help='Don\'t prune feature extractor of AlexNet')
 parser.add_argument('--prune_fraction', type=float, default=0.1,
                     help='Fraction of parameters to prune each iteration')
 parser.add_argument('--iterations', type=int, default=6,
                     help='Number of iterations for iterative pruning')
-parser.add_argument('--random_prune', action='store_true',
-                    help='Randomly select connections to prune')
 
 
 def finetune(model, num_epochs, trainloader, testloader, device):
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.0003, momentum=0.9)
     test_accus = train(model, device, trainloader, testloader, criterion,
                        optimizer, num_epochs, None, scheduler=None)
     train_accu = evaluate(model, trainloader, device)
@@ -31,15 +25,13 @@ def finetune(model, num_epochs, trainloader, testloader, device):
     return test_accus[-1], train_accu
 
 
-def print_mask_sum(root_module_list):
+def print_mask_sum(root_module):
     mask_sum = 0
-    for root_module in root_module_list:
-        for name,module in root_module.named_children():
-            # print(name)
-            for name, mask in module.named_buffers():
-                # print(name, mask.sum().item())
-                mask_sum += mask.sum().item()
-    print("Mask sum:", mask_sum)
+    for name, module in root_module.named_children():
+        for name, mask in module.named_buffers():
+            mask_sum += mask.sum().item()
+    print("Number of not-masked paramters:", mask_sum)
+    return mask_sum
 
 
 def print_module_weights(root_module):
@@ -49,6 +41,21 @@ def print_module_weights(root_module):
         # print(list(module.named_buffers()))
         if hasattr(module, "weight"):
             print(module.weight)
+
+
+def get_conv_modules(module):
+    conv_modules = []
+    for name, module in module.named_children():
+        if isinstance(module, nn.Conv2d):
+            conv_modules.append(module)
+    return conv_modules
+
+
+def get_num_params(conv_modules):
+    num_params_conv = 0
+    for module in conv_modules:
+        num_params_conv += module.weight.nelement()
+    return num_params_conv
 
 
 if __name__ == "__main__":
@@ -88,14 +95,9 @@ if __name__ == "__main__":
     train_accus_prune= [train_accu]
     test_accus_prune_finetuned = [test_accu]
     train_accus_prune_finetuned = [train_accu]
-    conv_modules = []
-    for name, module in model.features.named_children():
-        if isinstance(module, nn.Conv2d):
-            conv_modules.append(module)
+    conv_modules = get_conv_modules(model.features)
     print(conv_modules)
-    num_params_conv = 0
-    for module in conv_modules:
-        num_params_conv += module.weight.nelement()
+    num_params_conv = get_num_params(conv_modules)
     print("Number of weight parameters in all conv layers:", num_params_conv)
     for i in range(prune_iteration):
         print("=========================Iteration %i =========================="%(i+1))
@@ -103,7 +105,7 @@ if __name__ == "__main__":
             prune.ln_structured(module, "weight", amount=prune_fraction, n=2,dim=0)
         frac_list.append(frac_list[-1]*(1-prune_fraction))
 
-        print_mask_sum([model.features])
+        print_mask_sum(model.features)
         test_accu, train_accu = evaluate(model, testloader, DEVICE), evaluate(
             model, trainloader, DEVICE)
         print("Performance before finetuning:")
