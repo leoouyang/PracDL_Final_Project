@@ -81,8 +81,8 @@ if __name__ == "__main__":
     else:
         pruning_method = prune.L1Unstructured
 
-    trainset, testset = load_cifar10_pytorch(root='G:\ML dataset', transform=ImageNet_Transform_Func)
-    # trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
+    # trainset, testset = load_cifar10_pytorch(root='G:\ML dataset', transform=ImageNet_Transform_Func)
+    trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=2)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,

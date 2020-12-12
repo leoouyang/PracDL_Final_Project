@@ -6,7 +6,7 @@ import torch.nn.utils.prune as prune
 import argparse
 
 parser = argparse.ArgumentParser(
-    description='PyTorch AlexNet Prune & Retraining')
+    description='PyTorch BERT Prune & Retraining')
 parser.add_argument('--prune_fraction', type=float, default=0.5,
                     help='Fraction of parameters to prune each iteration')
 parser.add_argument('--iterations', type=int, default=6,
