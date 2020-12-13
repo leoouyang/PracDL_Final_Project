@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -7,6 +5,14 @@ import torchvision
 import torchvision.models as models
 import torch.optim as optim
 import torchvision.transforms as transforms
+
+import argparse
+
+parser = argparse.ArgumentParser(
+    description='PyTorch ResNet50 training')
+
+parser.add_argument('--freeze', action='store_true',
+                    help='Don\'t prune feature extractor of AlexNet')
 
 
 def save_chkpt(model, epoch, val_acc, chkpt_dir):
@@ -100,37 +106,55 @@ ImageNet_Transform_Func = transforms.Compose([
 ])
 
 
+
 if __name__ == "__main__":
-    batch_size = 128
-    max_epoch = 20
-    chkpt_dir = "alexnet_chkpt"
 
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	batch_size = 128
+	max_epoch = 25
+	
+	# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+	trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
+	# trainset, testset = load_cifar10_pytorch()
+	trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+	                                      shuffle=True, num_workers=2)
+	testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+	                                     shuffle=False, num_workers=2)
 
-    # trainset, testset = load_cifar10_pytorch(root='G:\ML dataset', transform=ImageNet_Transform_Func)
-    trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                              shuffle=True, num_workers=2)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=2)
+	classes = ('plane', 'car', 'bird', 'cat',
+	       'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-    classes = ('plane', 'car', 'bird', 'cat',
-               'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+	if args.freeze:
+		# only train the last fc layer
+		model = models.vgg16(pretrained=True)
+		set_parameter_requires_grad(model, False)
 
-    model = models.alexnet(pretrained=True)
-    set_parameter_requires_grad(model, False)
-    model.classifier[6] = nn.Linear(4096, 10)
-    model.to(DEVICE)
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.classifier[6].parameters(), lr=0.01, momentum=0.9)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
-    test_accus = train(model, DEVICE, trainloader, testloader, criterion,
-                       optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
-    print(test_accus)
+		chkpt_dir = "vgg16_chkpt"
+		model.classifier[6] = nn.Linear(4096, 10)
 
-    # load_chkpt(model, "./alexnet_chkpt/checkpoint_13_0.91.pth", DEVICE)
-    # set_parameter_requires_grad(model, True)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-    # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
-    # test_accus = train(model, DEVICE, trainloader, testloader, criterion,
-    #                    optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
+		model.to(DEVICE)
+		criterion = torch.nn.CrossEntropyLoss()
+		optimizer = torch.optim.SGD(model.classifier[6].parameters(), lr=0.001, momentum=0.9)
+        # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+        # Decay LR by a factor of 0.1 every 7 epochs
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+        test_accus = train(model, DEVICE, trainloader, testloader, criterion,
+                           optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
+        print(test_accus)
+	else:
+		model = models.vgg16(pretrained=True)
+		set_parameter_requires_grad(model, True)
+
+		chkpt_dir = "vgg16_chkpt_whole"
+		model.classifier[6] = nn.Linear(4096, 10)
+
+		model.to(DEVICE)
+		criterion = torch.nn.CrossEntropyLoss()
+		optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+        # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+        # Decay LR by a factor of 0.1 every 7 epochs
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+        test_accus = train(model, DEVICE, trainloader, testloader, criterion,
+                           optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
+        print(test_accus)
+
