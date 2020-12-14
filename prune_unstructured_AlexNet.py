@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.utils.prune as prune
-import torch.nn.functional as F
 
 import argparse
 
@@ -126,7 +125,7 @@ if __name__ == "__main__":
         test_accus_prune.append(test_accu)
         train_accus_prune.append(train_accu)
 
-        test_accu, train_accu = finetune(model, 5, trainloader, testloader, DEVICE)
+        test_accu, train_accu = finetune(model, 10, trainloader, testloader, DEVICE)
         print("Performance after finetuning:")
         print("Test accuracy:", test_accu)
         print("Training accuracy:", train_accu)
