@@ -1,4 +1,4 @@
-from train_AlexNet import *
+from train_ResNet18 import *
 
 import torch
 import torch.nn as nn
