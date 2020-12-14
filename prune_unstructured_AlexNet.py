@@ -35,9 +35,7 @@ def print_mask_sum(root_module_list):
     mask_sum = 0
     for root_module in root_module_list:
         for name,module in root_module.named_children():
-            # print(name)
             for name, mask in module.named_buffers():
-                # print(name, mask.sum().item())
                 mask_sum += mask.sum().item()
     print("Mask sum:", mask_sum)
 
@@ -45,8 +43,6 @@ def print_mask_sum(root_module_list):
 def print_module_weights(root_module):
     for name,module in root_module.named_children():
         print(name)
-        # print(list(module.named_parameters()))
-        # print(list(module.named_buffers()))
         if hasattr(module, "weight"):
             print(module.weight)
 
@@ -80,6 +76,7 @@ if __name__ == "__main__":
     else:
         pruning_method = prune.L1Unstructured
 
+    # Load dataset and create Dataloader
     # trainset, testset = load_cifar10_pytorch(root='G:\ML dataset', transform=ImageNet_Transform_Func)
     trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
@@ -87,6 +84,7 @@ if __name__ == "__main__":
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=2)
 
+    # Define model and load the checkpoint
     model = models.alexnet()
     model.classifier[6] = nn.Linear(4096, 10)
     model.to(DEVICE)
@@ -109,6 +107,7 @@ if __name__ == "__main__":
     print(pruning_method)
     for i in range(prune_iteration):
         print("=========================Iteration %i =========================="%(i+1))
+        # Prune the model using global_unstructured
         prune.global_unstructured(
             parameters_to_prune,
             pruning_method=pruning_method,
@@ -116,7 +115,9 @@ if __name__ == "__main__":
         )
         frac_list.append(frac_list[-1]*(1-prune_fraction))
 
+        # Check the number of parameters left in model
         print_mask_sum([model.features, model.classifier])
+        # Evaluate the performance of model before finetuning
         test_accu, train_accu = evaluate(model, testloader, DEVICE), evaluate(
             model, trainloader, DEVICE)
         print("Performance before finetuning:")
@@ -125,6 +126,7 @@ if __name__ == "__main__":
         test_accus_prune.append(test_accu)
         train_accus_prune.append(train_accu)
 
+        # Finetune the model after pruning
         test_accu, train_accu = finetune(model, 10, trainloader, testloader, DEVICE)
         print("Performance after finetuning:")
         print("Test accuracy:", test_accu)
@@ -132,6 +134,7 @@ if __name__ == "__main__":
         test_accus_prune_finetuned.append(test_accu)
         train_accus_prune_finetuned.append(train_accu)
 
+        # Print the sparsity of each layer
         sum_zero_weight = 0
         sum_weight = 0
         for module, parameter in parameters_to_prune:

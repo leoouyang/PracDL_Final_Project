@@ -36,6 +36,7 @@ def get_mask_sum(module):
     return mask_sum
 
 
+# Recursively find the module with attrs2prune(weight and bias) and collect those modules
 def get_parameters_to_prune(module, attrs2prune, module_name="model"):
     parameters_to_prune = []
     parameters_names = []
@@ -52,9 +53,11 @@ def get_parameters_to_prune(module, attrs2prune, module_name="model"):
                 parameters_names.append(module_name+"."+name)
     return parameters_to_prune, parameters_names
 
+
 if __name__ == "__main__":
     MODEL_NAME = 'bert-base-uncased'
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # If you prefer print outputs to console, change output_file to None
     output_file = open("output.txt", "w")
 
     args = parser.parse_args()
@@ -73,6 +76,7 @@ if __name__ == "__main__":
     else:
         pruning_method = prune.L1Unstructured
 
+    # Load dataset and create dataloader
     dataset = load_dataset("glue", "sst2")
     trainset, testset = dataset["train"], dataset["validation"]
     print(dataset, file=output_file)
@@ -81,8 +85,9 @@ if __name__ == "__main__":
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=2)
 
+    # Initialize the tokenizer for preprocessing input of BERT
     tokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
-
+    # Load pretrained bert model from Transformers package
     model = BertForSequenceClassification.from_pretrained(chkpt_dir)
     model.to(DEVICE)
     print(model, file=output_file)
@@ -97,9 +102,6 @@ if __name__ == "__main__":
     test_accus_prune_finetuned = [test_accu]
     train_accus_prune_finetuned = [train_accu]
     parameters_to_prune, parameters_names = get_parameters_to_prune(model, ("weight", "bias"))
-    # for i in range(len(parameters_to_prune)):
-    #     print(parameters_to_prune[i])
-    #     print(parameters_names[i])
     print(pruning_method, file=output_file)
     for i in range(prune_iteration):
         if output_file != None:

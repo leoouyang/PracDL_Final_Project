@@ -13,6 +13,7 @@ def train(model, tokenizer, device, train_loader, test_loader,
     for epoch in range(max_epoch):
         model.train()
         for i, data in enumerate(train_loader):
+            # Prepare the batch for BERT input
             tokenized_x = tokenizer(data["sentence"], padding=True, truncation=True, return_tensors="pt")
             input_ids = tokenized_x["input_ids"].to(device)
             token_type_ids = tokenized_x["token_type_ids"].to(device)

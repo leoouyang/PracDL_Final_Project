@@ -1,4 +1,3 @@
-from train_AlexNet import *
 from prune_structured_AlexNet import *
 
 import torch
@@ -12,7 +11,7 @@ def get_average_inference_time(model, device, batch_size_list):
     model.eval()
     with torch.no_grad():
         # do a inference to make sure the model is loaded in GPU
-        output = model(torch.randn(1, 3, 224, 224).to(device))
+        _ = model(torch.randn(1, 3, 224, 224).to(device))
 
         result = []
         for batch_size in batch_size_list:
@@ -23,7 +22,7 @@ def get_average_inference_time(model, device, batch_size_list):
                 start = torch.cuda.Event(enable_timing=True)
                 end = torch.cuda.Event(enable_timing=True)
                 start.record()
-                output = model(x)
+                _ = model(x)
                 end.record()
                 torch.cuda.synchronize()
 
@@ -36,6 +35,9 @@ def get_average_inference_time(model, device, batch_size_list):
 
 def finetune_bias(model, num_epochs, trainloader, testloader, device):
     params_to_train = []
+    # Since the difference between the pytorch pruned model and the actual
+    # pruned model is the bias of the pruned layers. We can restore the
+    # accuracy by only finetune the bias of the remaining filters
     for name, param in model.named_parameters():
         if "bias" in name:
             params_to_train.append(param)
@@ -57,6 +59,8 @@ if __name__ == "__main__":
     batch_size_list = [1, 4, 16, 64, 256]
     DEVICE = "cuda"
     MODEL_PATH = './alexnet_finetuned.pth'
+    # Set this flag to true if you want to check the accuracy of pruned and original model
+    # It will also finetune bias of the actually pruned model
     CHECK_ACCURACY = False
     FRAC_LIST = [90]
     for i in range(9):
@@ -71,9 +75,9 @@ if __name__ == "__main__":
         print("==========================================================")
         PRUNED_MODEL_PATH = "alexnet_chkpt/model_conv_frac_%.2f.pth"%frac
 
-        trainset, testset = load_cifar10_pytorch(root='G:\ML dataset',
-                                                 transform=ImageNet_Transform_Func)
-        # trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
+        # trainset, testset = load_cifar10_pytorch(root='G:\ML dataset',
+        #                                          transform=ImageNet_Transform_Func)
+        trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                                   shuffle=True, num_workers=2)
         testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
@@ -125,7 +129,6 @@ if __name__ == "__main__":
         for module in conv_modules:
             filter_sum_weight = module.weight.sum(dim=(1,2,3)).detach().cpu().numpy()
             pruning_idxs = np.where(filter_sum_weight==0)[0].tolist()
-            # print(pruning_idxs)
             DG = pruning.DependencyGraph()
             DG.build_dependency(model_pruned, example_inputs=torch.randn(1, 3, 224, 224))
             pruning_plan = DG.get_pruning_plan(module, pruning.prune_conv, idxs = pruning_idxs)

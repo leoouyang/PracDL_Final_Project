@@ -127,6 +127,8 @@ if __name__ == "__main__":
                        optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
     print(test_accus)
 
+    # Continue training the model from previous checkpoint.
+    # Training all layers instead of only the last layer of the model.
     # load_chkpt(model, "./alexnet_chkpt/checkpoint_13_0.91.pth", DEVICE)
     # set_parameter_requires_grad(model, True)
     # optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)

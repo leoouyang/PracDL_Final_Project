@@ -37,8 +37,6 @@ def print_mask_sum(root_module):
 def print_module_weights(root_module):
     for name,module in root_module.named_children():
         print(name)
-        # print(list(module.named_parameters()))
-        # print(list(module.named_buffers()))
         if hasattr(module, "weight"):
             print(module.weight)
 
@@ -86,7 +84,6 @@ if __name__ == "__main__":
     print(model)
     load_chkpt(model, MODEL_PATH, DEVICE)
 
-    # test_accu, train_accu = 0,0
     test_accu, train_accu = evaluate(model,testloader, DEVICE), evaluate(model,trainloader, DEVICE)
     print(test_accu, train_accu)
 
@@ -95,6 +92,7 @@ if __name__ == "__main__":
     train_accus_prune= [train_accu]
     test_accus_prune_finetuned = [test_accu]
     train_accus_prune_finetuned = [train_accu]
+    # We are only structurally pruning the convolutional layers
     conv_modules = get_conv_modules(model.features)
     print(conv_modules)
     num_params_conv = get_num_params(conv_modules)
