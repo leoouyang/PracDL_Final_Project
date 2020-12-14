@@ -57,8 +57,8 @@ def get_parameters_to_prune(module, attrs2prune, module_name="model"):
     return parameters_to_prune, parameters_names
 
 if __name__ == "__main__":
-    MODEL_PATH = './resnet50_finetuned.pth'
-    CHKPT_DIR = "resnet50_chkpt"
+    MODEL_PATH = './resnet18_finetuned.pth'
+    CHKPT_DIR = "resnet18_chkpt"
     DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     args = parser.parse_args()
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=2)
 
-    model = models.resnet50()
+    model = models.resnet18()
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 10)
     model.to(DEVICE)
@@ -143,4 +143,4 @@ if __name__ == "__main__":
         print(sum_zero_weight, sum_weight)
 
     result = np.vstack((frac_list, test_accus_prune, train_accus_prune, test_accus_prune_finetuned, train_accus_prune_finetuned))
-    np.savetxt("resnet50_unstructured_performance.txt", result)
+    np.savetxt("resnet18_unstructured_performance.txt", result)

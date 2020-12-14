@@ -10,6 +10,10 @@ import argparse
 
 parser = argparse.ArgumentParser(
     description='PyTorch AlexNet Prune & Retraining')
+parser.add_argument('--ignore_extractor', action='store_true',
+                    help='Don\'t prune feature extractor of AlexNet')
+parser.add_argument('--ignore_classifier', action='store_true',
+                    help='Don\'t prune feature extractor of AlexNet')
 parser.add_argument('--prune_fraction', type=float, default=0.5,
                     help='Fraction of parameters to prune each iteration')
 parser.add_argument('--iterations', type=int, default=6,
@@ -28,37 +32,38 @@ def finetune(model, num_epochs, trainloader, testloader, device):
     return test_accus[-1], train_accu
 
 
-def get_mask_sum(module):
+def print_mask_sum(root_module_list):
     mask_sum = 0
-    children = list(module.named_children())
-    if len(children) > 0:
-        for name, module in children:
-            mask_sum += get_mask_sum(module)
-    else:
-        for name, mask in module.named_buffers():
-            mask_sum += mask.sum().item()
-    return mask_sum
+    for root_module in root_module_list:
+        for name,module in root_module.named_children():
+            # print(name)
+            for name, mask in module.named_buffers():
+                # print(name, mask.sum().item())
+                mask_sum += mask.sum().item()
+    print("Mask sum:", mask_sum)
 
 
-def get_parameters_to_prune(module, attrs2prune, module_name="model"):
+def print_module_weights(root_module):
+    for name,module in root_module.named_children():
+        print(name)
+        # print(list(module.named_parameters()))
+        # print(list(module.named_buffers()))
+        if hasattr(module, "weight"):
+            print(module.weight)
+
+
+def get_parameters_to_prune(root_module, attrs2prune):
     parameters_to_prune = []
-    parameters_names = []
-    children = list(module.named_children())
-    if len(children) > 0:
-        for name, module in children:
-            output = get_parameters_to_prune(module, attrs2prune, module_name=module_name+"."+name)
-            parameters_to_prune += output[0]
-            parameters_names += output[1]
-    else:
+    for name, module in root_module.named_children():
         for name, param in module.named_parameters():
             if name in attrs2prune:
                 parameters_to_prune.append((module, name))
-                parameters_names.append(module_name+"."+name)
-    return parameters_to_prune, parameters_names
+    print(parameters_to_prune)
+    return parameters_to_prune
 
 if __name__ == "__main__":
-    MODEL_PATH = './resnet50_finetuned.pth'
-    CHKPT_DIR = "resnet50_chkpt"
+    MODEL_PATH = './vgg16_finetuned.pth'
+    CHKPT_DIR = "vgg16_chkpt"
     DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     args = parser.parse_args()
@@ -83,7 +88,7 @@ if __name__ == "__main__":
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=2)
 
-    model = models.resnet50()
+    model = models.vgg16()
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 10)
     model.to(DEVICE)
@@ -99,11 +104,10 @@ if __name__ == "__main__":
     test_accus_prune_finetuned = [test_accu]
     train_accus_prune_finetuned = [train_accu]
     parameters_to_prune = []
-   
-    parameters_to_prune += get_parameters_to_prune(model, ("weight", "bias"))
-
-
-
+    if not args.ignore_extractor:
+        parameters_to_prune += get_parameters_to_prune(model.features, ("weight", "bias"))
+    if not args.ignore_classifier:
+        parameters_to_prune += get_parameters_to_prune(model.classifier, ("weight", "bias"))
     print(pruning_method)
     for i in range(prune_iteration):
         print("=========================Iteration %i =========================="%(i+1))
@@ -143,4 +147,4 @@ if __name__ == "__main__":
         print(sum_zero_weight, sum_weight)
 
     result = np.vstack((frac_list, test_accus_prune, train_accus_prune, test_accus_prune_finetuned, train_accus_prune_finetuned))
-    np.savetxt("resnet50_unstructured_performance.txt", result)
+    np.savetxt("vgg16_unstructured_performance.txt", result)

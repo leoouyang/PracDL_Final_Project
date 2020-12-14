@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -109,7 +111,7 @@ ImageNet_Transform_Func = transforms.Compose([
 
 if __name__ == "__main__":
 	args = parser.parse_args()
-	
+
 	batch_size = 128
 	max_epoch = 20
 	
