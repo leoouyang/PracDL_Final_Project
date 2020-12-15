@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,7 +9,7 @@ import torchvision.transforms as transforms
 import argparse
 
 parser = argparse.ArgumentParser(
-    description='PyTorch ResNet50 training')
+    description='PyTorch ResNet18 training')
 
 parser.add_argument('--freeze', action='store_true',
                     help='Don\'t prune feature extractor of AlexNet')
@@ -111,50 +109,50 @@ ImageNet_Transform_Func = transforms.Compose([
 
 if __name__ == "__main__":
     args = parser.parse_args()
-	batch_size = 128
-	max_epoch = 25
-	
-	# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-	trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
-	# trainset, testset = load_cifar10_pytorch()
-	trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-	                                      shuffle=True, num_workers=2)
-	testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-	                                     shuffle=False, num_workers=2)
+    batch_size = 128
+    max_epoch = 25
 
-	classes = ('plane', 'car', 'bird', 'cat',
-	       'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    # DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    trainset, testset = load_cifar10_pytorch(transform=ImageNet_Transform_Func)
+    # trainset, testset = load_cifar10_pytorch()
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                          shuffle=True, num_workers=2)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                         shuffle=False, num_workers=2)
 
-	if args.freeze:
-		# only train the last fc layer
-		model = models.resnet50(pretrained=True)
-		set_parameter_requires_grad(model, False)
+    classes = ('plane', 'car', 'bird', 'cat',
+           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-		chkpt_dir = "resnet18_chkpt"
-		num_ftrs = model.fc.in_features
-		model.fc = nn.Linear(num_ftrs, 10)
+    if args.freeze:
+        # only train the last fc layer
+        model = models.resnet18(pretrained=True)
+        set_parameter_requires_grad(model, False)
 
-		model.to(DEVICE)
-		criterion = torch.nn.CrossEntropyLoss()
-		optimizer = torch.optim.SGD(model.fc.parameters(), lr=0.001, momentum=0.9)
+        chkpt_dir = "resnet18_chkpt"
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, 10)
+
+        model.to(DEVICE)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(model.fc.parameters(), lr=0.001, momentum=0.9)
         # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
         # Decay LR by a factor of 0.1 every 7 epochs
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
         test_accus = train(model, DEVICE, trainloader, testloader, criterion,
                            optimizer, max_epoch, chkpt_dir, scheduler=scheduler)
         print(test_accus)
-	else:
-		model = models.resnet50(pretrained=True)
-		set_parameter_requires_grad(model, True)
+    else:
+        model = models.resnet18(pretrained=True)
+        set_parameter_requires_grad(model, True)
 
-		chkpt_dir = "resnet18_chkpt_whole"
-		num_ftrs = model.fc.in_features
-		model.fc = nn.Linear(num_ftrs, 10)
+        chkpt_dir = "resnet18_chkpt_whole"
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, 10)
 
-		model.to(DEVICE)
-		criterion = torch.nn.CrossEntropyLoss()
-		optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+        model.to(DEVICE)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
         # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
         # Decay LR by a factor of 0.1 every 7 epochs
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
