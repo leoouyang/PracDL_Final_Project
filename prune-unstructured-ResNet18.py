@@ -1,3 +1,4 @@
+import os
 from train_ResNet18 import *
 
 import torch
@@ -56,15 +57,16 @@ def get_parameters_to_prune(module, attrs2prune, module_name="model"):
                 parameters_names.append(module_name+"."+name)
     return parameters_to_prune, parameters_names
 
+
 if __name__ == "__main__":
-    MODEL_PATH = './resnet18_finetuned.pth'
+    MODEL_PATH = 'models/resnet18_finetuned.pth'
     CHKPT_DIR = "resnet18_chkpt"
     DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     args = parser.parse_args()
     print(args)
 
-    batch_size = 128
+    batch_size = 64
     prune_iteration = args.iterations
     prune_fraction = args.prune_fraction
 
@@ -98,11 +100,9 @@ if __name__ == "__main__":
     train_accus_prune= [train_accu]
     test_accus_prune_finetuned = [test_accu]
     train_accus_prune_finetuned = [train_accu]
-    parameters_to_prune = []
-   
-    parameters_to_prune += get_parameters_to_prune(model, ("weight", "bias"))
-
-
+    
+    get_parameters_to_prune(model, ("weight", "bias"))
+    parameters_to_prune, parameters_names = get_parameters_to_prune(model, ("weight", "bias"))
 
     print(pruning_method)
     for i in range(prune_iteration):
@@ -114,7 +114,6 @@ if __name__ == "__main__":
         )
         frac_list.append(frac_list[-1]*(1-prune_fraction))
 
-        print_mask_sum([model.features, model.classifier])
         test_accu, train_accu = evaluate(model, testloader, DEVICE), evaluate(
             model, trainloader, DEVICE)
         print("Performance before finetuning:")

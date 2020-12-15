@@ -1,11 +1,11 @@
-from train_AlexNet import *
+from train_vgg16 import *
 
 import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.utils.prune as prune
 import torch.nn.functional as F
-
+import os
 import argparse
 
 parser = argparse.ArgumentParser(
@@ -62,14 +62,14 @@ def get_parameters_to_prune(root_module, attrs2prune):
     return parameters_to_prune
 
 if __name__ == "__main__":
-    MODEL_PATH = './vgg16_finetuned.pth'
+    MODEL_PATH = 'models/vgg16_finetuned.pth'
     CHKPT_DIR = "vgg16_chkpt"
     DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     args = parser.parse_args()
     print(args)
 
-    batch_size = 128
+    batch_size = 64
     prune_iteration = args.iterations
     prune_fraction = args.prune_fraction
 
@@ -89,8 +89,7 @@ if __name__ == "__main__":
                                              shuffle=False, num_workers=2)
 
     model = models.vgg16()
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, 10)
+    model.classifier[6] = nn.Linear(4096, 10)
     model.to(DEVICE)
     print(model)
     load_chkpt(model, MODEL_PATH, DEVICE)
