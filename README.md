@@ -106,4 +106,7 @@ For files *_performance.txt, the rows(from top to bottom) are fraction of model 
 test/train accuracies before finetuning, test/train accuracies after finetuning.  
 Improvement in inference time are stored in *_efficiency files.
 
+*_structured_performance.txt records the variation of the number parameters left after pruning.
+the rows(from top to bottom) are fraction of model left, the number of parameters of original model, the number of parameters(unmasked) left for pytorch pruning and the number of parameters(unmasked) left for actually pruned model.
+
 
