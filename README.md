@@ -67,19 +67,25 @@ python evaluate_vgg16_efficiency.py
 For training ResNet: Fine-tuned the pre-trained model
 ```python
 python train_ResNet18.py
+
 or
+
 python train_ResNet50.py
 ```
 For unstructured pruning of ResNet with L1:
 ```python
 python prune-unstructured-resnet18.py --prune_fraction 0.1591 --iterations 10
+
 or 
+
 python prune-unstructured-resnet50.py --prune_fraction 0.1591 --iterations 10
 ```
 For structured pruning of VGG16 with L2:
 ```python
 python prune_structured_resnet18.py --prune_fraction 0.1 --iterations 10
+
 or
+
 python prune_structured_resnet50.py --prune_fraction 0.1 --iterations 10
 ```
 
@@ -88,6 +94,7 @@ For evaluating improvement in inference time of structurally-pruned ResNet:
 python evaluate_resnet18_efficiency.py
 
 or 
+
 python evaluate_resnet50_efficiency.py
 ```
 
