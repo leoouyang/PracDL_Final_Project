@@ -62,3 +62,10 @@ Results are stored in numpy matrices and saved as txt files in performance folde
 For files *_performance.txt, the rows(from top to bottom) are fraction of model left, 
 test/train accuracies before finetuning, test/train accuracies after finetuning.  
 Improvement in inference time are stored in *_efficiency files.
+
+## Results
+### VGG16 & ResNet18 & ResNet50
+Same as the above models, Results are also stored in numpy matrices and saved as txt files in performance2 folder.
+For files *_performance.txt, the rows(from top to bottom) are fraction of model left, 
+test/train accuracies before finetuning, test/train accuracies after finetuning.  
+Improvement in inference time are stored in *_efficiency files.
