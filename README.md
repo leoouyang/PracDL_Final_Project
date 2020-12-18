@@ -53,6 +53,39 @@ For unstructured pruning of VGG16 with L1:
 ```python
 python prune_unstructured_AlexNet.py --prune_fraction 0.1591 --iterations 12
 ```
+For structured pruning of VGG16 with L2:
+```python
+python prune_structured_AlexNet.py --prune_fraction 0.1 --iterations 10
+```
+For evaluating improvement in inference time of structurally-pruned VGG16:
+```python
+python evaluate_alexnet_efficiency.py
+```
+
+
+### ResNet18 or ResNet50 
+For training ResNet: Fine-tuned the pre-trained model
+```python
+python train_ResNet18.py
+or
+python train_ResNet50.py
+```
+
+For unstructured pruning of VGG16 with L1:
+```python
+python prune_unstructured_AlexNet.py --prune_fraction 0.1591 --iterations 12
+```
+For structured pruning of VGG16 with L2:
+```python
+python prune_structured_AlexNet.py --prune_fraction 0.1 --iterations 10
+```
+For evaluating improvement in inference time of structurally-pruned VGG16:
+```python
+python evaluate_alexnet_efficiency.py
+
+
+
+
 
 
 
