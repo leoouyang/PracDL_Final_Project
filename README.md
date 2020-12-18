@@ -51,15 +51,15 @@ python train_vgg16.py
 ```
 For unstructured pruning of VGG16 with L1:
 ```python
-python prune_unstructured_AlexNet.py --prune_fraction 0.1591 --iterations 12
+python prune-unstructured-vgg16.py --prune_fraction 0.1591 --iterations 12
 ```
 For structured pruning of VGG16 with L2:
 ```python
-python prune_structured_AlexNet.py --prune_fraction 0.1 --iterations 10
+python prune_structured_vgg16.py --prune_fraction 0.1 --iterations 10
 ```
 For evaluating improvement in inference time of structurally-pruned VGG16:
 ```python
-python evaluate_alexnet_efficiency.py
+python evaluate_vgg16_efficiency.py
 ```
 
 
@@ -70,23 +70,26 @@ python train_ResNet18.py
 or
 python train_ResNet50.py
 ```
-
-For unstructured pruning of VGG16 with L1:
+For unstructured pruning of ResNet with L1:
 ```python
-python prune_unstructured_AlexNet.py --prune_fraction 0.1591 --iterations 12
+python prune-unstructured-resnet18.py --prune_fraction 0.1591 --iterations 10
+or 
+python prune-unstructured-resnet50.py --prune_fraction 0.1591 --iterations 10
 ```
 For structured pruning of VGG16 with L2:
 ```python
-python prune_structured_AlexNet.py --prune_fraction 0.1 --iterations 10
+python prune_structured_resnet18.py --prune_fraction 0.1 --iterations 10
+or
+python prune_structured_resnet50.py --prune_fraction 0.1 --iterations 10
 ```
-For evaluating improvement in inference time of structurally-pruned VGG16:
+
+For evaluating improvement in inference time of structurally-pruned ResNet:
 ```python
-python evaluate_alexnet_efficiency.py
+python evaluate_resnet18_efficiency.py
 
-
-
-
-
+or 
+python evaluate_resnet50_efficiency.py
+```
 
 
 ## Results
@@ -102,3 +105,5 @@ Same as the above models, Results are also stored in numpy matrices and saved as
 For files *_performance.txt, the rows(from top to bottom) are fraction of model left, 
 test/train accuracies before finetuning, test/train accuracies after finetuning.  
 Improvement in inference time are stored in *_efficiency files.
+
+
