@@ -44,6 +44,18 @@ For unstructured pruning of BERT with L1:
 python prune_unstructured_AlexNet.py --prune_fraction 0.1591 --iterations 12
 ```
 
+### VGG16
+For training VGG16: Fine-tuned the pre-trained model
+```python
+python train_vgg16.py
+```
+For unstructured pruning of VGG16 with L1:
+```python
+python prune_unstructured_AlexNet.py --prune_fraction 0.1591 --iterations 12
+```
+
+
+
 ## Results
 ### AlexNet & BERT
 Results are stored in numpy matrices and saved as txt files in performance folder.
